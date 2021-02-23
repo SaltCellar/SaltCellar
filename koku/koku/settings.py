@@ -124,16 +124,12 @@ MIDDLEWARE = [
     "koku.middleware.DisableCSRF",
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "koku.middleware.IdentityHeaderMiddleware",
+    "koku.middleware.KokuTenantMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    PROMETHEUS_AFTER_MIDDLEWARE,
 ]
-MIDDLEWARE.extend(
-    [
-        "koku.middleware.IdentityHeaderMiddleware",
-        "koku.middleware.KokuTenantMiddleware",
-        "django.middleware.clickjacking.XFrameOptionsMiddleware",
-        "whitenoise.middleware.WhiteNoiseMiddleware",
-        PROMETHEUS_AFTER_MIDDLEWARE,
-    ]
-)
 
 DEVELOPMENT = ENVIRONMENT.bool("DEVELOPMENT", default=False)
 if DEVELOPMENT:
@@ -184,6 +180,7 @@ HOSTNAME = ENVIRONMENT.get_value("HOSTNAME", default="localhost")
 REDIS_HOST = ENVIRONMENT.get_value("REDIS_HOST", default="redis")
 REDIS_PORT = ENVIRONMENT.get_value("REDIS_PORT", default="6379")
 REDIS_DB = 1
+REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
 
 KEEPDB = ENVIRONMENT.bool("KEEPDB", default=True)
 TEST_CACHE_LOCATION = "unique-snowflake"
@@ -417,18 +414,6 @@ MASU_API_REPORT_DATA = f"{API_PATH_PREFIX}/v1/report_data/"
 # AMQP Message Broker
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
 RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", "5672")
-
-REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULTS_URL = REDIS_URL
-CELERY_IMPORTS = ("masu.processor.tasks", "masu.celery.tasks", "koku.metrics")
-CELERY_BROKER_POOL_LIMIT = None
-CELERY_WORKER_PREFETCH_MULTIPLIER = 1
-CELERY_WORKER_CONCURRENCY = 1
-CELERY_WORKER_LOG_FORMAT = "[%(asctime)s: %(levelname)s/%(processName)s] %(message)s"
-CELERY_WORKER_TASK_LOG_FORMAT = (
-    "[%(asctime)s: %(levelname)s/%(processName)s] [%(task_name)s(%(task_id)s via %(task_root_id)s)] %(message)s"
-)
 
 
 # AWS S3 Bucket Settings

@@ -16,7 +16,7 @@ from koku import sentry  # noqa: F401
 from koku.env import ENVIRONMENT
 
 
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 class LogErrorsTask(Task):  # pragma: no cover
@@ -24,7 +24,7 @@ class LogErrorsTask(Task):  # pragma: no cover
 
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         """Log exceptions when a celery task fails."""
-        LOGGER.exception("Task failed: %s", exc, exc_info=exc)
+        LOG.exception("Task failed: %s", exc, exc_info=exc)
         super().on_failure(exc, task_id, args, kwargs, einfo)
 
 
@@ -42,19 +42,25 @@ class LoggingCelery(Celery):
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "koku.settings")
 
-LOGGER.info("Starting celery.")
+LOG.info("Starting celery.")
 # Setup the database for use in Celery
 django.setup()
-LOGGER.info("Database configured.")
+LOG.info("Database configured.")
+
+
+CELERY_BROKER_URL = settings.REDIS_URL
+CELERY_RESULTS_URL = settings.REDIS_URL
+CELERY_IMPORTS = ("masu.processor.tasks", "masu.celery.tasks", "koku.metrics")
+CELERY_BROKER_POOL_LIMIT = None
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_WORKER_CONCURRENCY = 1
 
 # 'app' is the recommended convention from celery docs
 # following this for ease of comparison to reference implementation
-app = LoggingCelery(
-    "koku", log="koku.log:TaskRootLogging", backend=settings.CELERY_RESULTS_URL, broker=settings.CELERY_BROKER_URL
-)
-app.config_from_object("django.conf:settings", namespace="CELERY")
+app = LoggingCelery("koku", log="koku.log:TaskRootLogging", backend=CELERY_RESULTS_URL, broker=CELERY_BROKER_URL)
+# app.config_from_object("django.conf:settings", namespace="CELERY")
 
-LOGGER.info("Celery autodiscover tasks.")
+LOG.info("Celery autodiscover tasks.")
 
 # Toggle to enable/disable scheduled checks for new reports.
 if ENVIRONMENT.bool("SCHEDULE_REPORT_CHECKS", default=False):
@@ -165,8 +171,23 @@ def wait_for_migrations(sender, instance, **kwargs):  # pragma: no cover
     from .database import check_migrations
 
     while not check_migrations():
-        LOGGER.warning("Migrations not done. Sleeping")
+        LOG.warning("Migrations not done. Sleeping")
         time.sleep(5)
+
+
+# @after_setup_logger.connect
+# def setup_loggers(logger, *args, **kwargs):
+#     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+#     # FileHandler
+#     fh = logging.FileHandler(settings.LOGGING_FILE)
+#     fh.setFormatter(formatter)
+#     logger.addHandler(fh)
+
+#     # StreamHandler
+#     slh = logging.StreamHandler()
+#     slh.setFormatter(formatter)
+#     logger.addHandler(slh)
 
 
 def is_task_currently_running(task_name, task_id, check_args=None):
@@ -174,7 +195,7 @@ def is_task_currently_running(task_name, task_id, check_args=None):
     try:
         active_dict = CELERY_INSPECT.active()
     except OperationalError:
-        LOGGER.warning("Cannot connect to RabbitMQ.")
+        LOG.warning("Cannot connect to RabbitMQ.")
         return False
     active_tasks = []
     for task_list in active_dict.values():
