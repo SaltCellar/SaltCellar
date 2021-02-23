@@ -175,21 +175,6 @@ def wait_for_migrations(sender, instance, **kwargs):  # pragma: no cover
         time.sleep(5)
 
 
-# @after_setup_logger.connect
-# def setup_loggers(logger, *args, **kwargs):
-#     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-#     # FileHandler
-#     fh = logging.FileHandler(settings.LOGGING_FILE)
-#     fh.setFormatter(formatter)
-#     logger.addHandler(fh)
-
-#     # StreamHandler
-#     slh = logging.StreamHandler()
-#     slh.setFormatter(formatter)
-#     logger.addHandler(slh)
-
-
 def is_task_currently_running(task_name, task_id, check_args=None):
     """Check if a specific task with optional args is currently running."""
     try:
