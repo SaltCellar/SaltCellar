@@ -36,8 +36,8 @@ from api.common import log_json
 from api.iam.models import Tenant
 from api.provider.models import Provider
 from api.utils import DateHelper
+from koku import celery_app
 from koku.cache import invalidate_view_cache_for_tenant_and_source_type
-from koku.celery import app
 from koku.middleware import KokuTenantMiddleware
 from masu.database.cost_model_db_accessor import CostModelDBAccessor
 from masu.database.provider_db_accessor import ProviderDBAccessor
@@ -104,15 +104,14 @@ def record_report_status(manifest_id, file_name, request_id, context={}):
         already_processed = db_accessor.get_last_completed_datetime()
         if already_processed:
             msg = f"Report {file_name} has already been processed."
-            LOG.info(log_json(request_id, msg, context))
         else:
             msg = f"Recording stats entry for {file_name}"
-            LOG.info(log_json(request_id, msg, context))
+        LOG.info(log_json(request_id, msg, context))
     return already_processed
 
 
 # pylint: disable=too-many-locals
-@app.task(name="masu.processor.tasks.get_report_files", queue_name="download", bind=True)
+@celery_app.task(name="masu.processor.tasks.get_report_files", queue_name="download", bind=True)
 def get_report_files(
     self,
     customer_name,
@@ -219,7 +218,7 @@ def get_report_files(
         WorkerCache().remove_task_from_cache(cache_key)
 
 
-@app.task(name="masu.processor.tasks.remove_expired_data", queue_name="remove_expired")
+@celery_app.task(name="masu.processor.tasks.remove_expired_data", queue_name="remove_expired")
 def remove_expired_data(schema_name, provider, simulate, provider_uuid=None, line_items_only=False):
     """
     Remove expired report data.
@@ -247,7 +246,7 @@ def remove_expired_data(schema_name, provider, simulate, provider_uuid=None, lin
         refresh_materialized_views.delay(schema_name, provider, provider_uuid=provider_uuid)
 
 
-@app.task(name="masu.processor.tasks.summarize_reports", queue_name="process")
+@celery_app.task(name="masu.processor.tasks.summarize_reports", queue_name="process")
 def summarize_reports(reports_to_summarize):
     """
     Summarize reports returned from line summary task.
@@ -291,7 +290,7 @@ def summarize_reports(reports_to_summarize):
                 )
 
 
-@app.task(name="masu.processor.tasks.update_summary_tables", queue_name="reporting")
+@celery_app.task(name="masu.processor.tasks.update_summary_tables", queue_name="reporting")
 def update_summary_tables(schema_name, provider, provider_uuid, start_date, end_date=None, manifest_id=None):
     """Populate the summary tables for reporting.
 
@@ -375,7 +374,7 @@ def update_summary_tables(schema_name, provider, provider_uuid, start_date, end_
     chain(linked_tasks).apply_async()
 
 
-@app.task(name="masu.processor.tasks.update_all_summary_tables", queue_name="reporting")
+@celery_app.task(name="masu.processor.tasks.update_all_summary_tables", queue_name="reporting")
 def update_all_summary_tables(start_date, end_date=None):
     """Populate all the summary tables for reporting.
 
@@ -407,7 +406,7 @@ def update_all_summary_tables(start_date, end_date=None):
         LOG.error("Unable to get accounts. Error: %s", str(error))
 
 
-@app.task(name="masu.processor.tasks.update_cost_model_costs", queue_name="reporting")
+@celery_app.task(name="masu.processor.tasks.update_cost_model_costs", queue_name="reporting")
 def update_cost_model_costs(
     schema_name, provider_uuid, start_date=None, end_date=None, provider_type=None, synchronous=False
 ):
@@ -449,7 +448,7 @@ def update_cost_model_costs(
 
 
 # fmt: off
-@app.task(name="masu.processor.tasks.refresh_materialized_views", queue_name="reporting")
+@celery_app.task(name="masu.processor.tasks.refresh_materialized_views", queue_name="reporting")
 def refresh_materialized_views(schema_name, provider_type, manifest_id=None, provider_uuid=None, synchronous=False):  # noqa: C901, E501
     """Refresh the database's materialized views for reporting."""
     # fmt: on
@@ -501,7 +500,7 @@ def refresh_materialized_views(schema_name, provider_type, manifest_id=None, pro
         worker_cache.release_single_task(task_name, cache_args)
 
 
-@app.task(name="masu.processor.tasks.vacuum_schema", queue_name="reporting")
+@celery_app.task(name="masu.processor.tasks.vacuum_schema", queue_name="reporting")
 def vacuum_schema(schema_name):
     """Vacuum the reporting tables in the specified schema."""
     table_sql = """
@@ -543,7 +542,7 @@ def normalize_table_options(table_options):
 # At this time, no table parameter will be lowered past the known production engine
 # setting of 0.2 by default. However this function's settings can be overridden via the
 # AUTOVACUUM_TUNING environment variable. See below.
-@app.task(name="masu.processor.tasks.autovacuum_tune_schema", queue_name="reporting")
+@celery_app.task(name="masu.processor.tasks.autovacuum_tune_schema", queue_name="reporting")
 def autovacuum_tune_schema(schema_name):  # noqa: C901
     """Set the autovacuum table settings based on table size for the specified schema."""
     table_sql = """
@@ -640,7 +639,7 @@ SELECT s.relname as "table_name",
     LOG.info(f"Altered autovacuum_vacuum_scale_factor on {alter_count} tables")
 
 
-@app.task(name="masu.processor.tasks.remove_stale_tenants", queue_name="remove_stale_tenants")
+@celery_app.task(name="masu.processor.tasks.remove_stale_tenants", queue_name="remove_stale_tenants")
 def remove_stale_tenants():
     """ Remove stale tenants from the tenant api """
     table_sql = """
