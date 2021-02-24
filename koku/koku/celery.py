@@ -65,7 +65,7 @@ LOG.info("Celery autodiscover tasks.")
 # Toggle to enable/disable scheduled checks for new reports.
 if ENVIRONMENT.bool("SCHEDULE_REPORT_CHECKS", default=False):
     # The interval to scan for new reports.
-    REPORT_CHECK_INTERVAL = datetime.timedelta(minutes=int(os.getenv("SCHEDULE_CHECK_INTERVAL", "60")))
+    REPORT_CHECK_INTERVAL = datetime.timedelta(minutes=int(ENVIRONMENT.get_value("SCHEDULE_CHECK_INTERVAL", "60")))
 
     CHECK_REPORT_UPDATES_DEF = {
         "task": "masu.celery.tasks.check_report_updates",

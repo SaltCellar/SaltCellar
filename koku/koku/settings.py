@@ -36,7 +36,10 @@ from corsheaders.defaults import default_headers
 
 from . import database
 from . import sentry
+from .configurator import ConfigFactory
 from .env import ENVIRONMENT
+
+configurator = ConfigFactory.get_configurator()
 
 # Database
 # https://docs.djangoproject.com/en/2.0/ref/settings/#databases
@@ -50,7 +53,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 # The SECRET_KEY is provided via an environment variable in OpenShift
-SECRET_KEY = os.getenv(
+SECRET_KEY = ENVIRONMENT.get_value(
     "DJANGO_SECRET_KEY",
     # safe value used for development when DJANGO_SECRET_KEY might not be set
     "asvuhxowz)zjbo4%7pc$ek1nbfh_-#%$bq_x8tkh=#e24825=5",
@@ -58,7 +61,7 @@ SECRET_KEY = os.getenv(
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Default value: False
-DEBUG = False if os.getenv("DJANGO_DEBUG", "False") == "False" else True
+DEBUG = ENVIRONMENT.get_value("DJANGO_DEBUG", "False") != "False"
 
 ALLOWED_HOSTS = ["*"]
 
@@ -261,7 +264,7 @@ USE_L10N = True
 
 USE_TZ = True
 
-API_PATH_PREFIX = os.getenv("API_PATH_PREFIX", ENVIRONMENT.get_value("API_PATH_PREFIX", default="/api"))
+API_PATH_PREFIX = ENVIRONMENT.get_value("API_PATH_PREFIX", default="/api")
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
@@ -296,10 +299,10 @@ CW_AWS_SECRET_ACCESS_KEY = ENVIRONMENT.get_value("CW_AWS_SECRET_ACCESS_KEY", def
 CW_AWS_REGION = ENVIRONMENT.get_value("CW_AWS_REGION", default="us-east-1")
 CW_LOG_GROUP = ENVIRONMENT.get_value("CW_LOG_GROUP", default="platform-dev")
 
-LOGGING_FORMATTER = os.getenv("DJANGO_LOG_FORMATTER", "simple")
-DJANGO_LOGGING_LEVEL = os.getenv("DJANGO_LOG_LEVEL", "INFO")
-KOKU_LOGGING_LEVEL = os.getenv("KOKU_LOG_LEVEL", "INFO")
-LOGGING_HANDLERS = os.getenv("DJANGO_LOG_HANDLERS", "console").split(",")
+LOGGING_FORMATTER = ENVIRONMENT.get_value("DJANGO_LOG_FORMATTER", "simple")
+DJANGO_LOGGING_LEVEL = ENVIRONMENT.get_value("DJANGO_LOG_LEVEL", "INFO")
+KOKU_LOGGING_LEVEL = ENVIRONMENT.get_value("KOKU_LOG_LEVEL", "INFO")
+LOGGING_HANDLERS = ENVIRONMENT.get_value("DJANGO_LOG_HANDLERS", "console").split(",")
 VERBOSE_FORMATTING = (
     "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d "
     "%(task_id)s %(task_parent_id)s %(task_root_id)s "
@@ -307,9 +310,9 @@ VERBOSE_FORMATTING = (
 )
 SIMPLE_FORMATTING = "[%(asctime)s] %(levelname)s %(task_root_id)s %(message)s"
 
-LOG_DIRECTORY = os.getenv("LOG_DIRECTORY", BASE_DIR)
+LOG_DIRECTORY = ENVIRONMENT.get_value("LOG_DIRECTORY", BASE_DIR)
 DEFAULT_LOG_FILE = os.path.join(LOG_DIRECTORY, "app.log")
-LOGGING_FILE = os.getenv("DJANGO_LOG_FILE", DEFAULT_LOG_FILE)
+LOGGING_FILE = ENVIRONMENT.get_value("DJANGO_LOG_FILE", DEFAULT_LOG_FILE)
 
 if CW_AWS_ACCESS_KEY_ID:
     try:
@@ -412,8 +415,8 @@ MASU_BASE_URL = f"http://{MASU_SERVICE_HOST}:{MASU_SERVICE_PORT}"
 MASU_API_REPORT_DATA = f"{API_PATH_PREFIX}/v1/report_data/"
 
 # AMQP Message Broker
-RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
-RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", "5672")
+RABBITMQ_HOST = ENVIRONMENT.get_value("RABBITMQ_HOST", "localhost")
+RABBITMQ_PORT = ENVIRONMENT.get_value("RABBITMQ_PORT", "5672")
 
 
 # AWS S3 Bucket Settings
@@ -434,7 +437,7 @@ PRESTO_HOST = ENVIRONMENT.get_value("PRESTO_HOST", default=None)
 PRESTO_PORT = ENVIRONMENT.get_value("PRESTO_PORT", default=None)
 
 # Time to wait between cold storage retrieval for data export. Default is 3 hours
-COLD_STORAGE_RETRIVAL_WAIT_TIME = int(os.getenv("COLD_STORAGE_RETRIVAL_WAIT_TIME", default="10800"))
+COLD_STORAGE_RETRIVAL_WAIT_TIME = int(ENVIRONMENT.get_value("COLD_STORAGE_RETRIVAL_WAIT_TIME", default="10800"))
 
 # Sources Client API Endpoints
 KOKU_SOURCES_CLIENT_HOST = ENVIRONMENT.get_value("KOKU_SOURCES_CLIENT_HOST", default="localhost")
