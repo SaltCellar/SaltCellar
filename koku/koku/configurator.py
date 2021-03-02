@@ -49,26 +49,6 @@ class Configurator:
         pass
 
     @staticmethod
-    def get_cloudwatch_access_id():
-        """Obtain cloudwatch access id."""
-        pass
-
-    @staticmethod
-    def get_cloudwatch_access_key():
-        """Obtain cloudwatch access key."""
-        pass
-
-    @staticmethod
-    def get_cloudwatch_region():
-        """Obtain cloudwatch region."""
-        pass
-
-    @staticmethod
-    def get_cloudwatch_log_group():
-        """Obtain cloudwatch log group."""
-        pass
-
-    @staticmethod
     def get_object_store_host():
         """Obtain object store host."""
         pass
@@ -163,26 +143,6 @@ class EnvConfigurator(Configurator):
         return ENVIRONMENT.get_value("INSIGHTS_KAFKA_TOPIC", default="platform.sources.event-stream")
 
     @staticmethod
-    def get_cloudwatch_access_id():
-        """Obtain cloudwatch access id."""
-        return ENVIRONMENT.get_value("CW_AWS_ACCESS_KEY_ID", default=None)
-
-    @staticmethod
-    def get_cloudwatch_access_key():
-        """Obtain cloudwatch access key."""
-        return ENVIRONMENT.get_value("CW_AWS_SECRET_ACCESS_KEY", default=None)
-
-    @staticmethod
-    def get_cloudwatch_region():
-        """Obtain cloudwatch region."""
-        return ENVIRONMENT.get_value("CW_AWS_REGION", default="us-east-1")
-
-    @staticmethod
-    def get_cloudwatch_log_group():
-        """Obtain cloudwatch log group."""
-        return ENVIRONMENT.get_value("CW_LOG_GROUP", default="platform-dev")
-
-    @staticmethod
     def get_object_store_host():
         """Obtain object store host."""
         return ENVIRONMENT.get_value("MINIO_ENDPOINT", default=None)
@@ -215,29 +175,29 @@ class EnvConfigurator(Configurator):
     @staticmethod
     def get_database_name():
         """Obtain database name."""
-        return ENVIRONMENT.get_value("DATABASE_NAME", default=None)
+        return ENVIRONMENT.get_value("DATABASE_NAME", default="postgres")
 
     @staticmethod
     def get_database_user():
         """Obtain database user."""
-        return ENVIRONMENT.get_value("DATABASE_USER", default=None)
+        return ENVIRONMENT.get_value("DATABASE_USER", default="postgres")
 
     @staticmethod
     def get_database_password():
         """Obtain database password."""
-        return ENVIRONMENT.get_value("DATABASE_PASSWORD", default=None)
+        return ENVIRONMENT.get_value("DATABASE_PASSWORD", default="postgres")
 
     @staticmethod
     def get_database_host():
         """Obtain database host."""
         SERVICE_NAME = ENVIRONMENT.get_value("DATABASE_SERVICE_NAME", default="").upper().replace("-", "_")
-        return ENVIRONMENT.get_value(f"{SERVICE_NAME}_SERVICE_HOST", default=None)
+        return ENVIRONMENT.get_value(f"{SERVICE_NAME}_SERVICE_HOST", default="localhost")
 
     @staticmethod
     def get_database_port():
         """Obtain database port."""
         SERVICE_NAME = ENVIRONMENT.get_value("DATABASE_SERVICE_NAME", default="").upper().replace("-", "_")
-        return ENVIRONMENT.get_value(f"{SERVICE_NAME}_SERVICE_PORT", default=None)
+        return ENVIRONMENT.get_value(f"{SERVICE_NAME}_SERVICE_PORT", default="15432")
 
     @staticmethod
     def get_database_ca():
@@ -277,26 +237,6 @@ class ClowderConfigurator(Configurator):
     def get_kafka_topic():
         """Obtain kafka topic."""
         return KafkaTopics.get("platform.upload.mkt").name
-
-    @staticmethod
-    def get_cloudwatch_access_id():
-        """Obtain cloudwatch access id."""
-        return LoadedConfig.logging.cloudwatch.accessKeyId
-
-    @staticmethod
-    def get_cloudwatch_access_key():
-        """Obtain cloudwatch access key."""
-        return LoadedConfig.logging.cloudwatch.secretAccessKey
-
-    @staticmethod
-    def get_cloudwatch_region():
-        """Obtain cloudwatch region."""
-        return LoadedConfig.logging.cloudwatch.region
-
-    @staticmethod
-    def get_cloudwatch_log_group():
-        """Obtain cloudwatch log group."""
-        return LoadedConfig.logging.cloudwatch.logGroup
 
     @staticmethod
     def get_object_store_host():
@@ -396,3 +336,6 @@ class ConfigFactory:
             return ClowderConfigurator
 
         return EnvConfigurator
+
+
+CONFIGURATOR = ConfigFactory.get_configurator()

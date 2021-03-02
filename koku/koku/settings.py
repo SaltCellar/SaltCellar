@@ -36,10 +36,9 @@ from corsheaders.defaults import default_headers
 
 from . import database
 from . import sentry
-from .configurator import ConfigFactory
+from .configurator import CONFIGURATOR
 from .env import ENVIRONMENT
 
-configurator = ConfigFactory.get_configurator()
 
 # Database
 # https://docs.djangoproject.com/en/2.0/ref/settings/#databases
@@ -56,12 +55,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = ENVIRONMENT.get_value(
     "DJANGO_SECRET_KEY",
     # safe value used for development when DJANGO_SECRET_KEY might not be set
-    "asvuhxowz)zjbo4%7pc$ek1nbfh_-#%$bq_x8tkh=#e24825=5",
+    default="asvuhxowz)zjbo4%7pc$ek1nbfh_-#%$bq_x8tkh=#e24825=5",
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Default value: False
-DEBUG = ENVIRONMENT.get_value("DJANGO_DEBUG", "False") != "False"
+DEBUG = ENVIRONMENT.get_value("DJANGO_DEBUG", cast=bool, default=False)
 
 ALLOWED_HOSTS = ["*"]
 
@@ -294,15 +293,10 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": DEFAULT_EXCEPTION_HANDLER,
 }
 
-CW_AWS_ACCESS_KEY_ID = ENVIRONMENT.get_value("CW_AWS_ACCESS_KEY_ID", default=None)
-CW_AWS_SECRET_ACCESS_KEY = ENVIRONMENT.get_value("CW_AWS_SECRET_ACCESS_KEY", default=None)
-CW_AWS_REGION = ENVIRONMENT.get_value("CW_AWS_REGION", default="us-east-1")
-CW_LOG_GROUP = ENVIRONMENT.get_value("CW_LOG_GROUP", default="platform-dev")
-
-LOGGING_FORMATTER = ENVIRONMENT.get_value("DJANGO_LOG_FORMATTER", "simple")
-DJANGO_LOGGING_LEVEL = ENVIRONMENT.get_value("DJANGO_LOG_LEVEL", "INFO")
-KOKU_LOGGING_LEVEL = ENVIRONMENT.get_value("KOKU_LOG_LEVEL", "INFO")
-LOGGING_HANDLERS = ENVIRONMENT.get_value("DJANGO_LOG_HANDLERS", "console").split(",")
+LOGGING_FORMATTER = ENVIRONMENT.get_value("DJANGO_LOG_FORMATTER", default="simple")
+DJANGO_LOGGING_LEVEL = ENVIRONMENT.get_value("DJANGO_LOG_LEVEL", default="INFO")
+KOKU_LOGGING_LEVEL = ENVIRONMENT.get_value("KOKU_LOG_LEVEL", default="INFO")
+LOGGING_HANDLERS = ENVIRONMENT.get_value("DJANGO_LOG_HANDLERS", default="console").split(",")
 VERBOSE_FORMATTING = (
     "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d "
     "%(task_id)s %(task_parent_id)s %(task_root_id)s "
@@ -310,47 +304,9 @@ VERBOSE_FORMATTING = (
 )
 SIMPLE_FORMATTING = "[%(asctime)s] %(levelname)s %(task_root_id)s %(message)s"
 
-LOG_DIRECTORY = ENVIRONMENT.get_value("LOG_DIRECTORY", BASE_DIR)
+LOG_DIRECTORY = ENVIRONMENT.get_value("LOG_DIRECTORY", default=BASE_DIR)
 DEFAULT_LOG_FILE = os.path.join(LOG_DIRECTORY, "app.log")
-LOGGING_FILE = ENVIRONMENT.get_value("DJANGO_LOG_FILE", DEFAULT_LOG_FILE)
-
-if CW_AWS_ACCESS_KEY_ID:
-    try:
-        POD_NAME = ENVIRONMENT.get_value("APP_POD_NAME", default="local")
-        BOTO3_SESSION = Session(
-            aws_access_key_id=CW_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=CW_AWS_SECRET_ACCESS_KEY,
-            region_name=CW_AWS_REGION,
-        )
-        watchtower = BOTO3_SESSION.client("logs")
-        watchtower.create_log_stream(logGroupName=CW_LOG_GROUP, logStreamName=POD_NAME)
-        LOGGING_HANDLERS += ["watchtower"]
-        WATCHTOWER_HANDLER = {
-            "level": KOKU_LOGGING_LEVEL,
-            "class": "watchtower.CloudWatchLogHandler",
-            "boto3_session": BOTO3_SESSION,
-            "log_group": CW_LOG_GROUP,
-            "stream_name": POD_NAME,
-            "formatter": LOGGING_FORMATTER,
-            "use_queues": False,
-            "create_log_group": False,
-        }
-    except ClientError as e:
-        if e.response.get("Error", {}).get("Code") == "ResourceAlreadyExistsException":
-            LOGGING_HANDLERS += ["watchtower"]
-            WATCHTOWER_HANDLER = {
-                "level": KOKU_LOGGING_LEVEL,
-                "class": "watchtower.CloudWatchLogHandler",
-                "boto3_session": BOTO3_SESSION,
-                "log_group": CW_LOG_GROUP,
-                "stream_name": POD_NAME,
-                "formatter": LOGGING_FORMATTER,
-                "use_queues": False,
-                "create_log_group": False,
-            }
-        else:
-            print("CloudWatch not configured.")
-
+LOGGING_FILE = ENVIRONMENT.get_value("DJANGO_LOG_FILE", default=DEFAULT_LOG_FILE)
 
 LOGGING = {
     "version": 1,
@@ -385,10 +341,6 @@ LOGGING = {
     },
 }
 
-if "watchtower" in LOGGING_HANDLERS:
-    LOGGING["handlers"]["watchtower"] = WATCHTOWER_HANDLER
-    print("CloudWatch configured.")
-
 KOKU_DEFAULT_CURRENCY = ENVIRONMENT.get_value("KOKU_DEFAULT_CURRENCY", default="USD")
 KOKU_DEFAULT_TIMEZONE = ENVIRONMENT.get_value("KOKU_DEFAULT_TIMEZONE", default="UTC")
 KOKU_DEFAULT_LOCALE = ENVIRONMENT.get_value("KOKU_DEFAULT_LOCALE", default="en_US.UTF-8")
@@ -415,8 +367,8 @@ MASU_BASE_URL = f"http://{MASU_SERVICE_HOST}:{MASU_SERVICE_PORT}"
 MASU_API_REPORT_DATA = f"{API_PATH_PREFIX}/v1/report_data/"
 
 # AMQP Message Broker
-RABBITMQ_HOST = ENVIRONMENT.get_value("RABBITMQ_HOST", "localhost")
-RABBITMQ_PORT = ENVIRONMENT.get_value("RABBITMQ_PORT", "5672")
+RABBITMQ_HOST = ENVIRONMENT.get_value("RABBITMQ_HOST", default="localhost")
+RABBITMQ_PORT = ENVIRONMENT.get_value("RABBITMQ_PORT", default="5672")
 
 
 # AWS S3 Bucket Settings
