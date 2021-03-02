@@ -60,7 +60,7 @@ SECRET_KEY = ENVIRONMENT.get_value(
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Default value: False
-DEBUG = ENVIRONMENT.get_value("DJANGO_DEBUG", cast=bool, default=False)
+DEBUG = ENVIRONMENT.bool("DJANGO_DEBUG", default=False)
 
 ALLOWED_HOSTS = ["*"]
 
@@ -228,7 +228,7 @@ else:
         },
     }
 
-if ENVIRONMENT.get_value("CACHED_VIEWS_DISABLED", default=False):
+if ENVIRONMENT.bool("CACHED_VIEWS_DISABLED", default=False):
     CACHES.update({"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}})
 DATABASES = {"default": database.config()}
 
@@ -389,7 +389,7 @@ PRESTO_HOST = ENVIRONMENT.get_value("PRESTO_HOST", default=None)
 PRESTO_PORT = ENVIRONMENT.get_value("PRESTO_PORT", default=None)
 
 # Time to wait between cold storage retrieval for data export. Default is 3 hours
-COLD_STORAGE_RETRIVAL_WAIT_TIME = int(ENVIRONMENT.get_value("COLD_STORAGE_RETRIVAL_WAIT_TIME", default="10800"))
+COLD_STORAGE_RETRIVAL_WAIT_TIME = ENVIRONMENT.int("COLD_STORAGE_RETRIVAL_WAIT_TIME", default=10800)
 
 # Sources Client API Endpoints
 KOKU_SOURCES_CLIENT_HOST = ENVIRONMENT.get_value("KOKU_SOURCES_CLIENT_HOST", default="localhost")
@@ -400,7 +400,7 @@ SOURCES_CLIENT_BASE_URL = f"http://{KOKU_SOURCES_CLIENT_HOST}:{KOKU_SOURCES_CLIE
 PROMETHEUS_PUSHGATEWAY = ENVIRONMENT.get_value("PROMETHEUS_PUSHGATEWAY", default="localhost:9091")
 
 # Flag for automatic data ingest on Provider create
-AUTO_DATA_INGEST = ENVIRONMENT.get_value("AUTO_DATA_INGEST", default=True)
+AUTO_DATA_INGEST = ENVIRONMENT.bool("AUTO_DATA_INGEST", default=True)
 
 # Demo Accounts list
 DEMO_ACCOUNTS = {}
